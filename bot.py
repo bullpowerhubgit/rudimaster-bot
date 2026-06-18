@@ -590,7 +590,27 @@ async def post_startup(app):
     ])
 
 
+async def _health_server():
+    """Minimal HTTP health server for Railway health checks."""
+    from aiohttp import web
+    app_http = web.Application()
+    app_http.router.add_get('/health', lambda _req: web.json_response({'status': 'ok', 'service': 'rudimaster-bot', 'mode': 'standby'}))
+    runner = web.AppRunner(app_http)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', int(os.getenv('PORT', 8080)))
+    await site.start()
+    logger.info("Health server running on port %s", os.getenv('PORT', '8080'))
+    while True:
+        await asyncio.sleep(3600)
+
+
 def main():
+    # If RUDIMASTER_POLLING=false, only run health server to avoid Conflict with SuperMegaBot
+    if os.getenv('RUDIMASTER_POLLING', 'false').lower() == 'false':
+        logger.info("Polling disabled (RUDIMASTER_POLLING=false) — running health-only mode")
+        asyncio.run(_health_server())
+        return
+
     application = (
         Application.builder()
         .token(BOT_TOKEN)
