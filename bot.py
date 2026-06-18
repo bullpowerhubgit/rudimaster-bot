@@ -569,6 +569,7 @@ async def health_server():
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 async def post_startup(app):
+    await health_server()
     bot: Bot = app.bot
     await bot.send_message(
         chat_id=CHAT_ID,
@@ -604,9 +605,6 @@ def main():
     application.add_handler(CommandHandler("seo",     lambda u, c: u.message.reply_text("🎯 SEO:", reply_markup=kb_seo())))
     application.add_handler(CallbackQueryHandler(on_callback))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(health_server())
 
     logger.info("RUDIMASTER Bot startet mit Polling...")
     application.run_polling(drop_pending_updates=True)
